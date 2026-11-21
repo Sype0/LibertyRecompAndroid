@@ -1,0 +1,52 @@
+name: Android Build (ARMv8.0)
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: windows-latest
+    timeout-minutes: 360
+    defaults:
+      run:
+        shell: bash
+    env:
+      NDK_VER: 29.0.14206865
+      CPU_MARCH: armv8-a
+      STRIP: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install NDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager.bat" --install "ndk;$NDK_VER" "platforms;android-35" "build-tools;35.0.0" > /dev/null
+          echo "ANDROID_NDK=$ANDROID_SDK_ROOT/ndk/$NDK_VER" >> "$GITHUB_ENV"
+      - name: Install Ninja
+        run: choco install ninja -y --no-progress
+      - name: Setup dependencies
+        run: python tools/setup_repo.py
+      - name: Build driver proxy
+        run: bash os/android/scripts/build_driver_proxy.sh
+      - name: Build native
+        run: bash os/android/scripts/build_native.sh
+      - name: Build APK
+        run: bash os/android/scripts/build_apk.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LibertyRecomp-armv8.0-apk
+          path: os/android/app/build/outputs/apk/debug/*.apk
