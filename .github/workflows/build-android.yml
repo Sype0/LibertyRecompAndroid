@@ -20,6 +20,7 @@ jobs:
       NDK_VER: 29.0.14206865
       CPU_MARCH: armv8-a
       STRIP: '1'
+      SERIAL: ci   # skip adb device detection in env.sh
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,9 +34,12 @@ jobs:
           java-version: '17'
       - name: Install NDK
         run: |
-          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
-          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager.bat" --install "ndk;$NDK_VER" "platforms;android-35" "build-tools;35.0.0" > /dev/null
-          echo "ANDROID_NDK=$ANDROID_SDK_ROOT/ndk/$NDK_VER" >> "$GITHUB_ENV"
+          SDK=$(cygpath -u "$ANDROID_SDK_ROOT")
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager.bat" --install "ndk;$NDK_VER" "platforms;android-35" "build-tools;35.0.0" "platform-tools" > /dev/null || true
+          test -d "$SDK/ndk/$NDK_VER"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK=$SDK/ndk/$NDK_VER" >> "$GITHUB_ENV"
+          echo "JAVA_HOME=$(cygpath -u "$JAVA_HOME")" >> "$GITHUB_ENV"
       - name: Install Ninja
         run: choco install ninja -y --no-progress
       - name: Setup dependencies
