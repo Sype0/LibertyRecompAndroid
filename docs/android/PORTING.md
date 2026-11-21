@@ -22,8 +22,8 @@ at 2.84 GHz, 3× A77, 4× A55), an Adreno 650, 8 GB of RAM and Android 13.
   runtime), `librexgpu-gta4-native.so` (the renderer plugin), `libSDL3.so` and
   `libc++_shared.so`. A build check makes sure every `DT_NEEDED` entry is either staged into the
   APK or a system library.
-- **Code generation flags.** The build uses `-march=armv8.2-a` for inline LSE atomics instead of
-  outline-atomic calls, and `-fno-emulated-tls` for native ELF TLS. Both are hot on the guest
+- **Code generation flags.** The build uses `-march=armv8-a` (ARMv8.0 baseline, outline atomics; override with
+  `CPU_MARCH`), and `-fno-emulated-tls` for native ELF TLS. Both are hot on the guest
   thread, which uses thread-locals and atomics constantly.
 - **Linking.** `libmain` uses ThinLTO and `-Bsymbolic-functions`, so calls between recompiled
   functions do not go through the PLT. The ReXGlue CLI emits a 64-byte aligned TLS segment, which

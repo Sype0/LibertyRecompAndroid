@@ -14,11 +14,12 @@ JOBS="${1:-$(( $(nproc) > 3 ? $(nproc) - 2 : 1 ))}"
 python "$APP_DIR/scripts/materialize_symlinks.py"
 "$APP_DIR/scripts/setup_host_tools.sh"
 
-# Snapdragon 865 and every Android 10+ arm64 device we target are ARMv8.2:
-# inline LSE atomics instead of outline-atomic calls, and native ELF TLS
-# (API 29+) instead of emulated TLS. Both are hot in the guest thread.
-CPU_FLAGS="-march=armv8.2-a -fno-emulated-tls"
-if [ ! -f "$BUILD_DIR/build.ninja" ] || ! grep -q -- "-fno-emulated-tls" "$BUILD_DIR/CMakeCache.txt"; then
+# Baseline ARMv8.0-A so the APK also runs on v8.0 cores (Cortex-A53/A57/A72...).
+# Atomics go through outline-atomic helpers (LSE picked at runtime when present).
+# Native ELF TLS (API 29+) instead of emulated TLS. CPU_MARCH overrides it.
+CPU_MARCH="${CPU_MARCH:-armv8-a}"
+CPU_FLAGS="-march=$CPU_MARCH -fno-emulated-tls"
+if [ ! -f "$BUILD_DIR/build.ninja" ] || ! grep -q -- "-march=$CPU_MARCH -fno-emulated-tls" "$BUILD_DIR/CMakeCache.txt"; then
   echo "== configuring $BUILD_TYPE in $BUILD_DIR"
   cmake -S "$REPO" -B "$BUILD_DIR" -G Ninja \
     -DCMAKE_C_FLAGS="$CPU_FLAGS" \
